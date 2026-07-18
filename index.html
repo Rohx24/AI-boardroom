@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Boardroom — Results Viewer</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #151822;
+    --panel-border: #262b3a;
+    --text: #e8eaf0;
+    --muted: #8b90a3;
+    --accent: #6d7cff;
+    --green: #3ecf8e;
+    --yellow: #e8b339;
+    --red: #e8534f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(circle at top, #12141c 0%, #0b0d12 60%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+    min-height: 100vh;
+    padding: 40px 20px 100px;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 32px; }
+  header h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
+  header p { color: var(--muted); margin: 0; font-size: 14px; }
+
+  .input-panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 28px;
+  }
+  .input-panel textarea {
+    width: 100%;
+    min-height: 220px;
+    background: #0d0f16;
+    color: var(--text);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 14px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
+    line-height: 1.5;
+    resize: vertical;
+  }
+  .input-panel .row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.secondary {
+    background: transparent;
+    border: 1px solid var(--panel-border);
+    color: var(--muted);
+  }
+  button:hover { opacity: 0.9; }
+
+  #report { display: none; }
+
+  .score-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .score-card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .score-card .label {
+    color: var(--muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .score-card .value { font-size: 26px; font-weight: 700; }
+  .bar-track {
+    height: 6px;
+    background: #262b3a;
+    border-radius: 4px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+  .bar-fill { height: 100%; border-radius: 4px; }
+
+  .risk-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 6px;
+  }
+  .risk-low { background: rgba(62,207,142,0.15); color: var(--green); }
+  .risk-medium { background: rgba(232,179,57,0.15); color: var(--yellow); }
+  .risk-high { background: rgba(232,83,79,0.15); color: var(--red); }
+
+  .members {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .member-card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 18px;
+  }
+  .member-card .name {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .member-card .quote { font-size: 15px; line-height: 1.5; }
+
+  .decision-banner {
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+  .decision-proceed { background: rgba(62,207,142,0.12); border: 1px solid rgba(62,207,142,0.4); }
+  .decision-conditions { background: rgba(232,179,57,0.12); border: 1px solid rgba(232,179,57,0.4); }
+  .decision-reject { background: rgba(232,83,79,0.12); border: 1px solid rgba(232,83,79,0.4); }
+  .decision-banner .tag {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .decision-banner .decision-text { font-size: 24px; font-weight: 800; }
+
+  .conditions-box, .notes-box {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .conditions-box h3, .notes-box h3 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .conditions-box ol { margin: 0; padding-left: 20px; }
+  .conditions-box li { margin-bottom: 8px; line-height: 1.5; }
+  .notes-box p { margin: 0; line-height: 1.7; color: #d3d6e0; font-size: 14.5px; }
+
+  .empty-hint { color: var(--muted); font-size: 13px; text-align: center; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>AI Boardroom</h1>
+    <p>Paste a final_report.md output below to render it</p>
+  </header>
+
+  <div class="input-panel">
+    <textarea id="raw" placeholder="Paste the full contents of final_report.md here..."></textarea>
+    <div class="row">
+      <button onclick="render()">Render Report</button>
+      <button class="secondary" onclick="loadSample()">Load Sample</button>
+      <button class="secondary" onclick="clearAll()">Clear</button>
+    </div>
+    <div class="empty-hint">Nothing leaves your browser — this just parses and displays the text.</div>
+  </div>
+
+  <div id="report"></div>
+</div>
+
+<script>
+function clearAll() {
+  document.getElementById('raw').value = '';
+  document.getElementById('report').style.display = 'none';
+  document.getElementById('report').innerHTML = '';
+}
+
+function loadSample() {
+  document.getElementById('raw').value = `====================================
+BOARD DECISION
+====================================
+Startup Score        4.3/10
+Investment Score     3.5/10
+Security Score       3.0/10
+Overall Risk          High
+====================================
+CEO         (not present — no ceo.json filed with this board)
+====================================
+VC-SKEPTIC  (not present — no vc_skeptic.json filed with this board)
+====================================
+SECURITY    You're recording client conversations without their consent and calling it a note-taking app.
+====================================
+ELON MUSK   You built a nicer notepad for electricians, not a company.
+====================================
+LINUS TORVALDS   Boring, buildable, and the boring part is the point.
+====================================
+FINAL DECISION: Proceed with Conditions
+Conditions:
+1. Before any expansion beyond the current 12-person pilot, design and implement genuine two-party verbal consent at the start of every recorded job.
+2. Implement encryption at rest and in transit for all audio, photos, and client PII, and publish a data retention/deletion policy.
+3. Solve offline-first recording with delayed processing at the current product scope before pursuing any scope expansion.
+4. Strip EXIF geolocation metadata by default from any photo-attachment fix.
+5. Re-validate the 8-of-12 retention signal with a pilot cohort that has no prior relationship to the founders.
+====================================
+Board notes: This board convened with only three of five expected seats filled — no CEO or VC-Skeptic file exists in verdicts/, so Investment Score above is anchored to Elon Musk as the most skeptical voice present on commercial viability. Security and Elon opened in agreement that the pitch has serious problems, though from entirely different angles: Security's objection is legal exposure, while Elon's is strategic. Linus Torvalds is the outlier optimist. The debate round hardened rather than resolved these positions.`;
+  render();
+}
+
+function scoreColor(score) {
+  if (score >= 7) return 'var(--green)';
+  if (score >= 4) return 'var(--yellow)';
+  return 'var(--red)';
+}
+
+function riskClass(risk) {
+  const r = risk.toLowerCase();
+  if (r.includes('low')) return 'risk-low';
+  if (r.includes('medium')) return 'risk-medium';
+  return 'risk-high';
+}
+
+function decisionClass(decision) {
+  const d = decision.toLowerCase();
+  if (d.includes('reject')) return 'decision-reject';
+  if (d.includes('condition')) return 'decision-conditions';
+  return 'decision-proceed';
+}
+
+function render() {
+  const raw = document.getElementById('raw').value;
+  if (!raw.trim()) return;
+
+  const startup = raw.match(/Startup Score\s+([\d.]+)/i);
+  const investment = raw.match(/Investment Score\s+([\d.]+)/i);
+  const security = raw.match(/Security Score\s+([\d.]+)/i);
+  const risk = raw.match(/Overall Risk\s+(\w+)/i);
+  const finalDecision = raw.match(/FINAL DECISION:\s*(.+)/i);
+  const boardNotes = raw.match(/Board notes:\s*([\s\S]+)$/i);
+
+  // Members: lines like "NAME    text" between ==== dividers, excluding known headers
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const skipWords = ['====', 'BOARD DECISION', 'Startup Score', 'Investment Score', 'Security Score', 'Overall Risk', 'FINAL DECISION', 'Conditions:', 'Board notes:'];
+  let members = [];
+  let inConditions = false;
+  let conditions = [];
+  for (const line of lines) {
+    if (line.startsWith('Conditions:')) { inConditions = true; continue; }
+    if (line.startsWith('Board notes:')) { inConditions = false; }
+    if (inConditions && /^\d+\./.test(line)) { conditions.push(line.replace(/^\d+\.\s*/, '')); continue; }
+    if (skipWords.some(w => line.startsWith(w))) continue;
+    const m = line.match(/^([A-Z][A-Z0-9\s\-]{1,30}?)\s{2,}(.+)$/);
+    if (m) {
+      members.push({ name: m[1].trim(), quote: m[2].trim() });
+    }
+  }
+
+  const el = document.getElementById('report');
+  el.style.display = 'block';
+
+  let html = '';
+
+  html += '<div class="score-grid">';
+  [
+    ['Startup Score', startup],
+    ['Investment Score', investment],
+    ['Security Score', security]
+  ].forEach(([label, match]) => {
+    const val = match ? parseFloat(match[1]) : null;
+    html += `<div class="score-card">
+      <div class="label">${label}</div>
+      <div class="value" style="color:${val !== null ? scoreColor(val) : 'var(--muted)'}">${val !== null ? val.toFixed(1) + '/10' : '—'}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${val !== null ? val*10 : 0}%; background:${val !== null ? scoreColor(val) : 'var(--muted)'}"></div></div>
+    </div>`;
+  });
+  html += `<div class="score-card">
+    <div class="label">Overall Risk</div>
+    <div><span class="risk-badge ${risk ? riskClass(risk[1]) : 'risk-medium'}">${risk ? risk[1] : '—'}</span></div>
+  </div>`;
+  html += '</div>';
+
+  if (members.length) {
+    html += '<div class="members">';
+    members.forEach(m => {
+      html += `<div class="member-card">
+        <div class="name">${m.name}</div>
+        <div class="quote">${m.quote.startsWith('(') ? '<em style="color:var(--muted)">'+m.quote+'</em>' : '"'+m.quote+'"'}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  if (finalDecision) {
+    html += `<div class="decision-banner ${decisionClass(finalDecision[1])}">
+      <div class="tag">Final Decision</div>
+      <div class="decision-text">${finalDecision[1].trim()}</div>
+    </div>`;
+  }
+
+  if (conditions.length) {
+    html += `<div class="conditions-box"><h3>Conditions</h3><ol>${conditions.map(c => `<li>${c}</li>`).join('')}</ol></div>`;
+  }
+
+  if (boardNotes) {
+    html += `<div class="notes-box"><h3>Board Notes</h3><p>${boardNotes[1].trim()}</p></div>`;
+  }
+
+  el.innerHTML = html;
+}
+</script>
+</body>
+</html>
