@@ -1,0 +1,21 @@
+{
+  "agent_name": "security-agent",
+  "score": 3,
+  "one_liner": "You're recording client conversations without their consent and calling it a note-taking app.",
+  "key_points": [
+    "Audio recordings 'may capture client conversations, not just the tech narrating' — that's a two-party consent problem in about a dozen US states (California, Florida, Illinois, Pennsylvania, etc.) the moment a homeowner is talking in the background while the tech records. This isn't a hypothetical edge case, it's baked into the product's stated data collection. Who's obtaining consent, and how, before day one?",
+    "You're collecting audio, photos, client names, and addresses on independent contractors and small businesses with no dedicated IT or compliance function. That means whatever safeguards exist have to live in your product, because your customer will not build them. Is audio encrypted at rest and in transit today, in the prototype, or is that a 'later' problem? With 12 pilot users already, 'later' already happened.",
+    "Voice-to-structured-note implies an LLM or similar pipeline parsing raw audio transcripts that include unfiltered client conversation. If a client says something sensitive or a tech says something they shouldn't (a complaint about the client, a safety violation, personal info), that's now sitting in a structured, searchable database tied to a named client and address. Data retention and deletion policy for that is not optional, it's the actual product risk.",
+    "Photo attachment is the churn driver per your own pilot data — if you fix that next, you're about to start ingesting photos of people's homes, kids' rooms, security setups, sometimes with EXIF geolocation. Before this goes from prototype to funded push, I want to know where photos live, who can access them, and whether they're scrubbed of location metadata by default.",
+    "Job/billing notes plus client PII plus no payment processing yet means you're currently under most state small-business breach-notification thresholds by luck, not design. The day you integrate with Jobber/Housecall Pro (which you say you're leaning toward), you inherit a much bigger blast radius the moment that OAuth token or API key leaks."
+  ],
+  "risk_flags": [
+    "Two-party consent / wiretapping exposure across multiple US states — not addressed at all in the pitch",
+    "No mention of encryption at rest/in transit for audio or PII",
+    "No stated data retention or deletion policy for client-identifiable audio and photos",
+    "Future CRM integration (Jobber/Housecall Pro) will expand breach blast radius without corresponding security investment mentioned"
+  ],
+  "debate": [
+    { "round": 2, "statement": "Elon's reframe that consent exposure means the data is 'valuable enough to be regulated' is a cute line but it's backwards — regulation isn't a compliment, it's liability with a deadline. A 'one-tap disclosure at job start' does not satisfy two-party consent law in most of the states I named; verbal disclosure to the client, not the tech tapping his own phone, is what's actually required, and nobody in this pitch has designed for that yet." }
+  ]
+}

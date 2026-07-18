@@ -1,0 +1,18 @@
+{
+  "agent_name": "elon-musk",
+  "score": 3,
+  "one_liner": "You built a nicer notepad for electricians, not a company.",
+  "key_points": [
+    "This is a feature, not a product. Voice-to-structured-note is exactly the kind of thing Jobber or Housecall Pro bolts on in one release cycle once they see you have traction, and you've said yourself you don't know if you survive as standalone.",
+    "12 people in three weeks is not a signal, it's a beta test with your own former coworkers. You need this running with people who have zero relationship to the founders before you know if the retention is real.",
+    "$19/month per tech is a rounding error business. If you actually believe the vision, the real prize isn't 'better notes' — it's owning the entire real-time data layer of what happens on a job site: diagnostics, parts, time, before the invoice even exists. That's a wedge into billing, into insurance claims, into supply chain for parts. You're thinking too small.",
+    "The one thing I'd actually fund here: the trade-specific voice model. That's real technology, hard to replicate, and could be the substrate for something much bigger than a note-taking app. But right now you're describing the note-taking app, not the substrate."
+  ],
+  "risk_flags": [
+    "No defensibility if incumbents copy the feature",
+    "Ambition ceiling too low relative to the technical asset you've built"
+  ],
+  "debate": [
+    { "round": 2, "statement": "Security says 'you're recording client conversations without consent' like that's a reason to shrink the vision — it's actually the tell that this data is valuable enough to be regulated, which means it's valuable enough to build a real company around instead of a $19/month notepad. Solve consent with a one-tap disclosure at job start, don't use it as an excuse to stay small." }
+  ]
+}

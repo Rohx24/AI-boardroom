@@ -1,0 +1,14 @@
+{
+  "agent_name": "vc_skeptic",
+  "score": 3,
+  "one_liner": "Fine-tuned ASR on trade vocabulary is a six-month head start, not a moat.",
+  "key_points": [
+    "Defensibility: the entire technical edge is a fine-tuned transcription model on 'megger' and 'plenum.' That's a training-data problem, not a research problem. Otter.ai, or Jobber itself, buys or builds this in two quarters if the wedge proves out.",
+    "Why-now is weak. Voice-to-structured-note has been technically possible for years; nothing changed in the world that makes this the moment except that transformer-based ASR got cheap enough for a two-person team to fine-tune it. That's a cost curve, not a market shift — it lowers the barrier for you and for whoever copies you.",
+    "Unit economics are untested and likely to get worse, not better, at scale: every job is fresh audio to transcribe and structure, so COGS scale roughly linearly with usage, no compounding data advantage stated beyond 'better vocabulary,' which competitors can replicate.",
+    "12 users, 3 weeks, drawn entirely from the founder's own trade network is not a market signal, it's a friends-and-family beta. 8-of-12 retention from people who know the founder personally tells me nothing about willingness to adopt from a cold funnel.",
+    "The founders themselves flag the real strategic question — build vs. integrate with Jobber/Housecall Pro — as unresolved. A team unsure whether they're a feature or a company is not fundable at this stage; that's not incidental uncertainty, it's the whole thesis undecided."
+  ],
+  "risk_flags": [],
+  "debate": []
+}
