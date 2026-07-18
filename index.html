@@ -1,340 +1,241 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Boardroom — Results Viewer</title>
-<style>
-  :root {
-    --bg: #0b0d12;
-    --panel: #151822;
-    --panel-border: #262b3a;
-    --text: #e8eaf0;
-    --muted: #8b90a3;
-    --accent: #6d7cff;
-    --green: #3ecf8e;
-    --yellow: #e8b339;
-    --red: #e8534f;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: radial-gradient(circle at top, #12141c 0%, #0b0d12 60%);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
-    min-height: 100vh;
-    padding: 40px 20px 100px;
-  }
-  .wrap { max-width: 900px; margin: 0 auto; }
-  header { text-align: center; margin-bottom: 32px; }
-  header h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
-  header p { color: var(--muted); margin: 0; font-size: 14px; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <title>OpenSwarm</title>
+  <!--
+    Cold-start splash with the Bayer-dithering pixel-blast effect baked
+    in as vanilla WebGL2. Painted before any JS bundle is fetched, so
+    the user sees something within ~50ms of the webview pointing here
+    instead of waiting 1-3s for Vite + React + MUI to download and mount.
 
-  .input-panel {
-    background: var(--panel);
-    border: 1px solid var(--panel-border);
-    border-radius: 14px;
-    padding: 20px;
-    margin-bottom: 28px;
-  }
-  .input-panel textarea {
-    width: 100%;
-    min-height: 220px;
-    background: #0d0f16;
-    color: var(--text);
-    border: 1px solid var(--panel-border);
-    border-radius: 10px;
-    padding: 14px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 12.5px;
-    line-height: 1.5;
-    resize: vertical;
-  }
-  .input-panel .row {
-    display: flex;
-    gap: 10px;
-    margin-top: 12px;
-    flex-wrap: wrap;
-  }
-  button {
-    background: var(--accent);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 18px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  button.secondary {
-    background: transparent;
-    border: 1px solid var(--panel-border);
-    color: var(--muted);
-  }
-  button:hover { opacity: 0.9; }
+    Zero deps on three.js / postprocessing / React — the shader is a
+    raw <canvas> + WebGL2 program. When the React bundle finishes
+    booting and `createRoot(rootEl).render(...)` runs, React clears
+    `#root`'s children, which removes the canvas + overlay automatically.
 
-  #report { display: none; }
-
-  .score-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 14px;
-    margin-bottom: 20px;
-  }
-  .score-card {
-    background: var(--panel);
-    border: 1px solid var(--panel-border);
-    border-radius: 14px;
-    padding: 18px;
-  }
-  .score-card .label {
-    color: var(--muted);
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 8px;
-  }
-  .score-card .value { font-size: 26px; font-weight: 700; }
-  .bar-track {
-    height: 6px;
-    background: #262b3a;
-    border-radius: 4px;
-    margin-top: 10px;
-    overflow: hidden;
-  }
-  .bar-fill { height: 100%; border-radius: 4px; }
-
-  .risk-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 700;
-    margin-top: 6px;
-  }
-  .risk-low { background: rgba(62,207,142,0.15); color: var(--green); }
-  .risk-medium { background: rgba(232,179,57,0.15); color: var(--yellow); }
-  .risk-high { background: rgba(232,83,79,0.15); color: var(--red); }
-
-  .members {
-    display: grid;
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-  .member-card {
-    background: var(--panel);
-    border: 1px solid var(--panel-border);
-    border-left: 3px solid var(--accent);
-    border-radius: 10px;
-    padding: 14px 18px;
-  }
-  .member-card .name {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    color: var(--accent);
-    text-transform: uppercase;
-    margin-bottom: 4px;
-  }
-  .member-card .quote { font-size: 15px; line-height: 1.5; }
-
-  .decision-banner {
-    border-radius: 14px;
-    padding: 22px 24px;
-    margin-bottom: 24px;
-    text-align: center;
-  }
-  .decision-proceed { background: rgba(62,207,142,0.12); border: 1px solid rgba(62,207,142,0.4); }
-  .decision-conditions { background: rgba(232,179,57,0.12); border: 1px solid rgba(232,179,57,0.4); }
-  .decision-reject { background: rgba(232,83,79,0.12); border: 1px solid rgba(232,83,79,0.4); }
-  .decision-banner .tag {
-    font-size: 12px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 6px;
-  }
-  .decision-banner .decision-text { font-size: 24px; font-weight: 800; }
-
-  .conditions-box, .notes-box {
-    background: var(--panel);
-    border: 1px solid var(--panel-border);
-    border-radius: 14px;
-    padding: 20px 24px;
-    margin-bottom: 20px;
-  }
-  .conditions-box h3, .notes-box h3 {
-    margin: 0 0 12px;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-  }
-  .conditions-box ol { margin: 0; padding-left: 20px; }
-  .conditions-box li { margin-bottom: 8px; line-height: 1.5; }
-  .notes-box p { margin: 0; line-height: 1.7; color: #d3d6e0; font-size: 14.5px; }
-
-  .empty-hint { color: var(--muted); font-size: 13px; text-align: center; margin-top: 8px; }
-</style>
+    Shader adapted from github.com/zavalit/bayer-dithering-webgl-demo,
+    same as the React PixelBlast component referenced in the design.
+  -->
+  <style>
+    html, body { margin: 0; min-height: 100%; }
+    #root { min-height: 100%; }
+    body {
+      background: #1a1a1a;
+      color: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+    .openswarm-splash {
+      position: fixed;
+      inset: 0;
+      background: #1a1a1a;
+      overflow: hidden;
+    }
+    .openswarm-splash canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .openswarm-splash-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      pointer-events: none;
+      text-align: center;
+      padding: 0 24px;
+    }
+    .openswarm-splash-title {
+      font-family: Charter, Georgia, serif;
+      font-size: 2rem;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      color: #f5f5f5;
+      text-shadow: 0 2px 24px rgba(26, 26, 26, 0.8);
+    }
+    .openswarm-splash-sub {
+      font-size: 0.9rem;
+      color: #b8b8b8;
+      max-width: 420px;
+      line-height: 1.55;
+      text-shadow: 0 2px 24px rgba(26, 26, 26, 0.8);
+    }
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>AI Boardroom</h1>
-    <p>Paste a final_report.md output below to render it</p>
-  </header>
-
-  <div class="input-panel">
-    <textarea id="raw" placeholder="Paste the full contents of final_report.md here..."></textarea>
-    <div class="row">
-      <button onclick="render()">Render Report</button>
-      <button class="secondary" onclick="loadSample()">Load Sample</button>
-      <button class="secondary" onclick="clearAll()">Clear</button>
+  <div id="root">
+    <div class="openswarm-splash" id="openswarm-splash">
+      <canvas id="openswarm-splash-canvas"></canvas>
+      <div class="openswarm-splash-overlay">
+        <div class="openswarm-splash-title">What're we brewing?</div>
+        <div class="openswarm-splash-sub">Drop the recipe below. I'll handle the rest.</div>
+      </div>
     </div>
-    <div class="empty-hint">Nothing leaves your browser — this just parses and displays the text.</div>
   </div>
+  <script>
+    // Vanilla-WebGL2 PixelBlast — runs IMMEDIATELY on HTML parse, no JS
+    // bundle wait. Graceful: if WebGL2 isn't available (super old GPU,
+    // a deliberately-disabled context, etc.) the splash falls back to a
+    // plain CSS background and the title/subtitle still show.
+    (function () {
+      var canvas = document.getElementById('openswarm-splash-canvas');
+      if (!canvas) return;
+      var gl = canvas.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: false });
+      if (!gl) return; // fallback: solid background, text still readable
+      var VS = '#version 300 es\n' +
+        'in vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }';
+      // Bayer-dither pixel-grid shader. Same algorithm as the React
+      // PixelBlast component (Bayer8 thresholding + FBM noise), just
+      // without the click-ripple uniform array (we don't need pointer
+      // interaction on a 2s splash).
+      var FS = '#version 300 es\n' +
+        'precision highp float;\n' +
+        'out vec4 fragColor;\n' +
+        'uniform vec2 uResolution;\n' +
+        'uniform float uTime;\n' +
+        'uniform float uPixelSize;\n' +
+        'uniform vec3 uColor;\n' +
+        'float Bayer2(vec2 a){ a = floor(a); return fract(a.x/2.0 + a.y*a.y*0.75); }\n' +
+        '#define Bayer4(a) (Bayer2(0.5*(a))*0.25 + Bayer2(a))\n' +
+        '#define Bayer8(a) (Bayer4(0.5*(a))*0.25 + Bayer2(a))\n' +
+        'float hash11(float n){ return fract(sin(n)*43758.5453); }\n' +
+        'float vnoise(vec3 p){\n' +
+        '  vec3 ip = floor(p); vec3 fp = fract(p);\n' +
+        '  float n000 = hash11(dot(ip + vec3(0,0,0), vec3(1.0,57.0,113.0)));\n' +
+        '  float n100 = hash11(dot(ip + vec3(1,0,0), vec3(1.0,57.0,113.0)));\n' +
+        '  float n010 = hash11(dot(ip + vec3(0,1,0), vec3(1.0,57.0,113.0)));\n' +
+        '  float n110 = hash11(dot(ip + vec3(1,1,0), vec3(1.0,57.0,113.0)));\n' +
+        '  float n001 = hash11(dot(ip + vec3(0,0,1), vec3(1.0,57.0,113.0)));\n' +
+        '  float n101 = hash11(dot(ip + vec3(1,0,1), vec3(1.0,57.0,113.0)));\n' +
+        '  float n011 = hash11(dot(ip + vec3(0,1,1), vec3(1.0,57.0,113.0)));\n' +
+        '  float n111 = hash11(dot(ip + vec3(1,1,1), vec3(1.0,57.0,113.0)));\n' +
+        '  vec3 w = fp*fp*fp*(fp*(fp*6.0-15.0)+10.0);\n' +
+        '  float x00 = mix(n000,n100,w.x); float x10 = mix(n010,n110,w.x);\n' +
+        '  float x01 = mix(n001,n101,w.x); float x11 = mix(n011,n111,w.x);\n' +
+        '  float y0  = mix(x00,x10,w.y); float y1 = mix(x01,x11,w.y);\n' +
+        '  return mix(y0,y1,w.z) * 2.0 - 1.0;\n' +
+        '}\n' +
+        'float fbm2(vec2 uv, float t){\n' +
+        '  vec3 p = vec3(uv * 2.0, t);\n' +
+        '  float amp = 1.0; float freq = 1.0; float sum = 1.0;\n' +
+        '  for (int i = 0; i < 5; i++) {\n' +
+        '    sum  += amp * vnoise(p * freq);\n' +
+        '    freq *= 1.25;\n' +
+        '  }\n' +
+        '  return sum * 0.5 + 0.5;\n' +
+        '}\n' +
+        'void main(){\n' +
+        '  vec2 fragCoord = gl_FragCoord.xy - uResolution * 0.5 + vec2(137.5, 137.5);\n' +
+        '  float aspectRatio = uResolution.x / uResolution.y;\n' +
+        '  float cellPixelSize = 8.0 * uPixelSize;\n' +
+        '  vec2 cellId = floor(fragCoord / cellPixelSize);\n' +
+        '  vec2 cellCoord = cellId * cellPixelSize;\n' +
+        '  vec2 uv = cellCoord / uResolution * vec2(aspectRatio, 1.0);\n' +
+        '  float base = fbm2(uv, uTime * 0.05);\n' +
+        '  base = base * 0.5 - 0.62;\n' +
+        '  float feed = base + 0.5 * 0.3;\n' +
+        '  float bayer = Bayer8(fragCoord / uPixelSize) - 0.5;\n' +
+        '  float bw = step(0.5, feed + bayer);\n' +
+        '  vec2 norm = gl_FragCoord.xy / uResolution;\n' +
+        '  float edge = min(min(norm.x, norm.y), min(1.0 - norm.x, 1.0 - norm.y));\n' +
+        '  float fade = smoothstep(0.0, 0.3, edge);\n' +
+        '  float M = bw * fade;\n' +
+        '  vec3 srgb = mix(uColor * 12.92, 1.055 * pow(uColor, vec3(1.0/2.4)) - 0.055, step(0.0031308, uColor));\n' +
+        '  fragColor = vec4(srgb, M);\n' +
+        '}';
+      function compile(type, src) {
+        var s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+          // Compile failed — bail out gracefully, the text overlay still shows.
+          return null;
+        }
+        return s;
+      }
+      var vs = compile(gl.VERTEX_SHADER, VS);
+      var fs = compile(gl.FRAGMENT_SHADER, FS);
+      if (!vs || !fs) return;
+      var prog = gl.createProgram();
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+      gl.useProgram(prog);
 
-  <div id="report"></div>
-</div>
+      // Full-screen quad (two triangles).
+      var buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+      var aLoc = gl.getAttribLocation(prog, 'a');
+      gl.enableVertexAttribArray(aLoc);
+      gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0);
 
-<script>
-function clearAll() {
-  document.getElementById('raw').value = '';
-  document.getElementById('report').style.display = 'none';
-  document.getElementById('report').innerHTML = '';
-}
+      var uResolution = gl.getUniformLocation(prog, 'uResolution');
+      var uTime = gl.getUniformLocation(prog, 'uTime');
+      var uPixelSize = gl.getUniformLocation(prog, 'uPixelSize');
+      var uColor = gl.getUniformLocation(prog, 'uColor');
 
-function loadSample() {
-  document.getElementById('raw').value = `====================================
-BOARD DECISION
-====================================
-Startup Score        4.3/10
-Investment Score     3.5/10
-Security Score       3.0/10
-Overall Risk          High
-====================================
-CEO         (not present — no ceo.json filed with this board)
-====================================
-VC-SKEPTIC  (not present — no vc_skeptic.json filed with this board)
-====================================
-SECURITY    You're recording client conversations without their consent and calling it a note-taking app.
-====================================
-ELON MUSK   You built a nicer notepad for electricians, not a company.
-====================================
-LINUS TORVALDS   Boring, buildable, and the boring part is the point.
-====================================
-FINAL DECISION: Proceed with Conditions
-Conditions:
-1. Before any expansion beyond the current 12-person pilot, design and implement genuine two-party verbal consent at the start of every recorded job.
-2. Implement encryption at rest and in transit for all audio, photos, and client PII, and publish a data retention/deletion policy.
-3. Solve offline-first recording with delayed processing at the current product scope before pursuing any scope expansion.
-4. Strip EXIF geolocation metadata by default from any photo-attachment fix.
-5. Re-validate the 8-of-12 retention signal with a pilot cohort that has no prior relationship to the founders.
-====================================
-Board notes: This board convened with only three of five expected seats filled — no CEO or VC-Skeptic file exists in verdicts/, so Investment Score above is anchored to Elon Musk as the most skeptical voice present on commercial viability. Security and Elon opened in agreement that the pitch has serious problems, though from entirely different angles: Security's objection is legal exposure, while Elon's is strategic. Linus Torvalds is the outlier optimist. The debate round hardened rather than resolved these positions.`;
-  render();
-}
+      gl.uniform3f(uColor, 0xcc / 255, 0x78 / 255, 0x5c / 255);
 
-function scoreColor(score) {
-  if (score >= 7) return 'var(--green)';
-  if (score >= 4) return 'var(--yellow)';
-  return 'var(--red)';
-}
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      function resize() {
+        var w = Math.floor(canvas.clientWidth * dpr);
+        var h = Math.floor(canvas.clientHeight * dpr);
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+        gl.viewport(0, 0, w, h);
+        gl.uniform2f(uResolution, w, h);
+        gl.uniform1f(uPixelSize, 4.0 * dpr);
+      }
+      resize();
+      window.addEventListener('resize', resize, { passive: true });
 
-function riskClass(risk) {
-  const r = risk.toLowerCase();
-  if (r.includes('low')) return 'risk-low';
-  if (r.includes('medium')) return 'risk-medium';
-  return 'risk-high';
-}
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-function decisionClass(decision) {
-  const d = decision.toLowerCase();
-  if (d.includes('reject')) return 'decision-reject';
-  if (d.includes('condition')) return 'decision-conditions';
-  return 'decision-proceed';
-}
+      var start = performance.now();
+      var raf;
+      function frame() {
+        var t = (performance.now() - start) / 1000;
+        gl.uniform1f(uTime, t * 0.5);
+        gl.clearColor(0.10, 0.10, 0.10, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        raf = requestAnimationFrame(frame);
+      }
+      raf = requestAnimationFrame(frame);
 
-function render() {
-  const raw = document.getElementById('raw').value;
-  if (!raw.trim()) return;
-
-  const startup = raw.match(/Startup Score\s+([\d.]+)/i);
-  const investment = raw.match(/Investment Score\s+([\d.]+)/i);
-  const security = raw.match(/Security Score\s+([\d.]+)/i);
-  const risk = raw.match(/Overall Risk\s+(\w+)/i);
-  const finalDecision = raw.match(/FINAL DECISION:\s*(.+)/i);
-  const boardNotes = raw.match(/Board notes:\s*([\s\S]+)$/i);
-
-  // Members: lines like "NAME    text" between ==== dividers, excluding known headers
-  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-  const skipWords = ['====', 'BOARD DECISION', 'Startup Score', 'Investment Score', 'Security Score', 'Overall Risk', 'FINAL DECISION', 'Conditions:', 'Board notes:'];
-  let members = [];
-  let inConditions = false;
-  let conditions = [];
-  for (const line of lines) {
-    if (line.startsWith('Conditions:')) { inConditions = true; continue; }
-    if (line.startsWith('Board notes:')) { inConditions = false; }
-    if (inConditions && /^\d+\./.test(line)) { conditions.push(line.replace(/^\d+\.\s*/, '')); continue; }
-    if (skipWords.some(w => line.startsWith(w))) continue;
-    const m = line.match(/^([A-Z][A-Z0-9\s\-]{1,30}?)\s{2,}(.+)$/);
-    if (m) {
-      members.push({ name: m[1].trim(), quote: m[2].trim() });
-    }
-  }
-
-  const el = document.getElementById('report');
-  el.style.display = 'block';
-
-  let html = '';
-
-  html += '<div class="score-grid">';
-  [
-    ['Startup Score', startup],
-    ['Investment Score', investment],
-    ['Security Score', security]
-  ].forEach(([label, match]) => {
-    const val = match ? parseFloat(match[1]) : null;
-    html += `<div class="score-card">
-      <div class="label">${label}</div>
-      <div class="value" style="color:${val !== null ? scoreColor(val) : 'var(--muted)'}">${val !== null ? val.toFixed(1) + '/10' : '—'}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${val !== null ? val*10 : 0}%; background:${val !== null ? scoreColor(val) : 'var(--muted)'}"></div></div>
-    </div>`;
-  });
-  html += `<div class="score-card">
-    <div class="label">Overall Risk</div>
-    <div><span class="risk-badge ${risk ? riskClass(risk[1]) : 'risk-medium'}">${risk ? risk[1] : '—'}</span></div>
-  </div>`;
-  html += '</div>';
-
-  if (members.length) {
-    html += '<div class="members">';
-    members.forEach(m => {
-      html += `<div class="member-card">
-        <div class="name">${m.name}</div>
-        <div class="quote">${m.quote.startsWith('(') ? '<em style="color:var(--muted)">'+m.quote+'</em>' : '"'+m.quote+'"'}</div>
-      </div>`;
-    });
-    html += '</div>';
-  }
-
-  if (finalDecision) {
-    html += `<div class="decision-banner ${decisionClass(finalDecision[1])}">
-      <div class="tag">Final Decision</div>
-      <div class="decision-text">${finalDecision[1].trim()}</div>
-    </div>`;
-  }
-
-  if (conditions.length) {
-    html += `<div class="conditions-box"><h3>Conditions</h3><ol>${conditions.map(c => `<li>${c}</li>`).join('')}</ol></div>`;
-  }
-
-  if (boardNotes) {
-    html += `<div class="notes-box"><h3>Board Notes</h3><p>${boardNotes[1].trim()}</p></div>`;
-  }
-
-  el.innerHTML = html;
-}
-</script>
+      // When React mounts and clears #root, the canvas is removed from
+      // the DOM; cancel the rAF loop so we don't keep burning GPU on a
+      // disposed canvas. MutationObserver fires when the splash node is
+      // removed (which is what createRoot().render() does to existing
+      // children on first commit).
+      var splash = document.getElementById('openswarm-splash');
+      if (splash && window.MutationObserver) {
+        var mo = new MutationObserver(function () {
+          if (!document.body.contains(splash)) {
+            cancelAnimationFrame(raf);
+            window.removeEventListener('resize', resize);
+            mo.disconnect();
+            try { gl.getExtension('WEBGL_lose_context').loseContext(); } catch (_) {}
+          }
+        });
+        mo.observe(document.getElementById('root'), { childList: true, subtree: true });
+      }
+    })();
+  </script>
+  <script type="module" src="/src/index.tsx"></script>
 </body>
 </html>
